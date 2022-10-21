@@ -7,15 +7,15 @@ import (
 	"github.com/gorilla/mux"
 )
 
-type Server struct {
+type App struct {
 	*mux.Router // this is our express-router
 	H           handlers.Handler
 	// this Handler is a wrapper around our DB to allow us to define methods on it
 	// those methods being our controller functions (handlers)
 }
 
-func NewServer() *Server {
-	s := &Server{
+func NewApp() *App {
+	s := &App{
 		H:      handlers.New(database.Init()),
 		Router: mux.NewRouter(),
 	}
@@ -24,7 +24,7 @@ func NewServer() *Server {
 	return s
 }
 
-func (s *Server) routes() {
+func (s *App) routes() {
 	s.dashboardRoutes()
 	s.providerRoutes()
 	s.staticRoutes()

@@ -12,8 +12,8 @@ import (
 
 func main() {
 	configs.LoadDotEnv()
-	srv := api.NewServer()
-	dev.RefreshSchema(srv.H.DB)
+	app := api.NewApp()
+	dev.RefreshSchema(app.H.DB)
 	fmt.Println("Connected to postgres!")
 	PORT := os.Getenv("PORT")
 

@@ -13,8 +13,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// var ctx = utils.StandardContext()
-
 func (h Handler) UpdateFlag(w http.ResponseWriter, r *http.Request) {
 	var flagReq models.FlagSubmit
 
