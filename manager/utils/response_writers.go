@@ -2,6 +2,7 @@ package utils
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 )
 
@@ -13,7 +14,6 @@ func PayloadResponse(w http.ResponseWriter, r *http.Request, payload interface{}
 }
 
 func NoRecordResponse(w http.ResponseWriter, r *http.Request, err error) {
-	// Record Not Found generic error response
 	w.WriteHeader(http.StatusNotFound)
 	w.Write([]byte(err.Error()))
 }
@@ -38,10 +38,15 @@ func BadRequestResponse(w http.ResponseWriter, r *http.Request, err error) {
 func UnprocessableEntityResponse(w http.ResponseWriter, r *http.Request, err error, msg string) {
 	w.WriteHeader(http.StatusUnprocessableEntity)
 	w.Write([]byte(msg))
-	w.Write([]byte("\n"))
 }
 
 func UnavailableResponse(w http.ResponseWriter, r *http.Request, err error) {
 	w.WriteHeader(http.StatusServiceUnavailable)
 	w.Write([]byte(err.Error()))
+}
+
+func MalformedIDResponse(w http.ResponseWriter, r *http.Request, t, id string) {
+	msg := fmt.Sprintf("invalid %s id param: %s", t, id)
+	w.WriteHeader(http.StatusBadRequest)
+	w.Write([]byte(msg))
 }

@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"manager/models"
 	"manager/utils"
 	"net/http"
@@ -11,78 +10,37 @@ import (
 )
 
 func (h Handler) GetAllFlags(w http.ResponseWriter, r *http.Request) {
-	var flags []models.Flag
+	res, err := h.DM.GetAllFlags()
 
-	result := h.DB.Find(&flags)
-
-	if result.Error != nil {
-		fmt.Println(result.Error)
-	}
-
-	response := []models.FlagNoAudsResponse{}
-
-	for ind := range flags {
-		response = append(response, models.FlagNoAudsResponse{Flag: &flags[ind]})
-	}
-
-	utils.PayloadResponse(w, r, &response)
-
+	h.ComposeResponse(w, r, res, err)
 }
 
 func (h Handler) GetAllAudiences(w http.ResponseWriter, r *http.Request) {
-	auds := []models.Audience{}
-	respAuds := []models.AudienceNoCondsResponse{}
+	res, err := h.DM.GetAllAudiences()
 
-	result := h.DB.Preload("Conditions").Find(&auds)
-
-	if result.Error != nil {
-		fmt.Println(result.Error)
-	}
-
-	for ind := range auds {
-		respAuds = append(respAuds, models.AudienceNoCondsResponse{Audience: &auds[ind]})
-	}
-
-	utils.PayloadResponse(w, r, respAuds)
+	h.ComposeResponse(w, r, res, err)
 }
 
 func (h Handler) GetAllAttributes(w http.ResponseWriter, r *http.Request) {
-	var attrs []models.Attribute
+	res, err := h.DM.GetAllAttributes()
 
-	result := h.DB.Find(&attrs)
-
-	if result.Error != nil {
-		fmt.Println(result.Error)
-	}
-
-	utils.PayloadResponse(w, r, attrs)
+	h.ComposeResponse(w, r, res, err)
 }
 
 func (h Handler) GetFlag(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id, err := strconv.Atoi(vars["id"])
+	idParam := mux.Vars(r)["id"]
+	id, err := strconv.Atoi(idParam)
 	if err != nil {
-		w.WriteHeader(400)
-		w.Write([]byte("Invalid flag ID."))
+		utils.MalformedIDResponse(w, r, "flag", idParam)
 		return
 	}
 
-	var flag models.Flag
-	auds := []models.AudienceNoCondsResponse{}
+	res, err := h.DM.GetFlag(id)
 
-	err = h.DB.Preload("Audiences").First(&flag, id).Error
-	if err != nil {
-		utils.NoRecordResponse(w, r, err)
-		return
-	}
-
-	for ind := range flag.Audiences {
-		auds = append(auds, models.AudienceNoCondsResponse{Audience: &flag.Audiences[ind]})
-	}
-
-	utils.PayloadResponse(w, r, &models.FlagResponse{Flag: &flag, Audiences: auds})
+	h.ComposeResponse(w, r, res, err)
 }
 
+// TODO
 func (h Handler) GetAudience(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
@@ -104,13 +62,13 @@ func (h Handler) GetAudience(w http.ResponseWriter, r *http.Request) {
 	conds := GetEmbeddedConds(aud, h.DB)
 	flags := GetEmbeddedFlags(aud.Flags)
 
-	response := models.AudienceResponse{
+	res := models.AudienceResponse{
 		Audience:   &aud,
 		Conditions: conds,
 		Flags:      flags,
 	}
 
-	utils.PayloadResponse(w, r, &response)
+	utils.PayloadResponse(w, r, &res)
 }
 
 func (h Handler) GetAttribute(w http.ResponseWriter, r *http.Request) {
@@ -131,9 +89,9 @@ func (h Handler) GetAttribute(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := BuildAttrResponse(attr, h)
+	res := BuildAttrResponse(attr, h)
 
-	utils.PayloadResponse(w, r, &response)
+	utils.PayloadResponse(w, r, &res)
 }
 
 func (h Handler) GetAuditLogs(w http.ResponseWriter, r *http.Request) {
@@ -146,13 +104,13 @@ func (h Handler) GetAuditLogs(w http.ResponseWriter, r *http.Request) {
 	attrs := []models.AttributeLog{}
 	h.DB.Find(&attrs)
 
-	response := models.AuditResponse{
+	res := models.AuditResponse{
 		FlagLogs:      flags,
 		AudienceLogs:  auds,
 		AttributeLogs: attrs,
 	}
 
-	utils.PayloadResponse(w, r, &response)
+	utils.PayloadResponse(w, r, &res)
 }
 
 func (h Handler) GetSdkKeys(w http.ResponseWriter, r *http.Request) {

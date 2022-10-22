@@ -6,11 +6,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// getting flag_audiences right with just GORM tags was brutal
-// settled on flag_id and audience_id
-// looking into flag_key and audience_key instead
-// not sure if that matters in real flow of our system though
-
 type Flag struct {
 	ID          uint           `json:"id" gorm:"primarykey"`
 	Key         string         `json:"key" gorm:"type:varchar(30); UNIQUE; NOT NULL"`
@@ -59,7 +54,7 @@ type Sdkkey struct {
 	ID        uint           `json:"id" gorm:"primaryKey"`
 	Key       string         `json:"key" gorm:"type:varchar(30); NOT NULL; UNIQUE"`
 	Status    bool           `json:"status" gorm:"default:true"`
-	Type string `json:"type" gorm:"default:'client'"`
+	Type      string         `json:"type" gorm:"default:'client'"`
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
 	DeletedAt gorm.DeletedAt `json:"deleted_at" gorm:"index"`

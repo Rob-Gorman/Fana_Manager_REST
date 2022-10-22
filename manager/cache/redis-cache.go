@@ -64,6 +64,7 @@ func (cache *redisCache) Set(key string, value interface{}) {
 // asynchronously flush all keys from cache
 func (cache *redisCache) FlushAllAsync() {
 	client := cache.getClient()
+	defer client.Close()
 
 	if client == nil {
 		utils.HandleErr(nil, "Redis cache did not initialize; cannot flush cache")
@@ -77,5 +78,5 @@ func (cache *redisCache) FlushAllAsync() {
 		return
 	}
 
-	client.FlushAllAsync(context.TODO())
+	client.FlushAllAsync(context.Background())
 }
