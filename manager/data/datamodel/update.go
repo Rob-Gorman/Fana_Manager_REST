@@ -3,86 +3,57 @@ package datamodel
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"manager/data/models"
 	"manager/utils"
-	"net/http"
-	"strconv"
 
-	"github.com/gorilla/mux"
 	"gorm.io/gorm"
 )
 
-func (d *DataModel) UpdateFlag(w http.ResponseWriter, r *http.Request) {
+func (d *DataModel) UpdateFlag(req *[]byte, id int) (*[]byte, *[]byte, error) {
 	var flagReq models.FlagSubmit
 
-	defer r.Body.Close()
-	body, _ := ioutil.ReadAll(r.Body)
-
-	err := json.Unmarshal(body, &flagReq)
+	err := json.Unmarshal(*req, &flagReq)
 	if err != nil {
-		utils.BadRequestResponse(w, r, err)
-		return
+		utils.ErrLog.Printf("failed to unmarshal request: %v", err)
+		return nil, nil, err
 	}
 
-	vars := mux.Vars(r)
-	id, err := strconv.Atoi(vars["id"])
-	if err != nil {
-		w.WriteHeader(400)
-		w.Write([]byte("Invalid resource ID."))
-		return
-	}
-
-	fr := FlagReqToFlag(flagReq, d)
-	var flag models.Flag
-	d.DB.First(&flag, id)
-	flag.Audiences = fr.Audiences
-	flag.DisplayName = fr.DisplayName
-	flag.Sdkkey = fr.Sdkkey
+	fr := d.FlagReqToFlag(flagReq)
+	var toUpdate models.Flag
+	d.DB.First(&toUpdate, id)
+	toUpdate.Audiences = fr.Audiences
+	toUpdate.DisplayName = fr.DisplayName
+	toUpdate.Sdkkey = fr.Sdkkey
 
 	if flagReq.Audiences != nil {
-		d.DB.Model(&flag).Omit("Audiences.*").Association("Audiences").Replace(flag.Audiences)
+		d.DB.Model(&toUpdate).Omit("Audiences.*").Association("Audiences").Replace(toUpdate.Audiences)
 	}
 
 	err = d.DB.Omit("Audiences").Session(&gorm.Session{
 		SkipHooks: true,
-	}).Updates(&flag).Error
+	}).Updates(&toUpdate).Error
 
 	if err != nil {
-		utils.BadRequestResponse(w, r, err)
-		return
+		utils.ErrLog.Printf("failed to update flag: %v", err)
+		return nil, nil, err
 	}
 
-	response := FlagToFlagResponse(flag, d)
-
-	pub := FlagUpdateForPublisher(d.DB, []models.Flag{flag})
-	PublishContent(&pub, "flag-update-channel")
-	RefreshCache(d.DB)
-
-	utils.UpdatedResponse(w, r, &response)
+	res := d.FlagToFlagResponse(toUpdate)
+	pub := d.FlagUpdateForPublisher([]models.Flag{toUpdate})
+	pubret, err := models.ToJSON(pub)
+	resret, err := models.ToJSON(res)
+	return pubret, resret, err
 }
 
-func (d *DataModel) ToggleFlag(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("\nGot a flag toggle!")
-	vars := mux.Vars(r)
-	id, err := strconv.Atoi(vars["id"])
-	if err != nil {
-		w.WriteHeader(400)
-		w.Write([]byte("Invalid resource ID."))
-		return
-	}
-
+func (d *DataModel) ToggleFlag(req *[]byte, id int) (*[]byte, *[]byte, error) {
 	togglef := struct {
 		Status bool `json:"status"`
 	}{}
 
-	body, _ := ioutil.ReadAll(r.Body)
-
-	err = json.Unmarshal(body, &togglef)
-
+	err := json.Unmarshal(*req, &togglef)
 	if err != nil {
-		utils.BadRequestResponse(w, r, err)
-		return
+		utils.ErrLog.Printf("failed to unmarshal request: %v", err)
+		return nil, nil, err
 	}
 
 	var flag models.Flag
@@ -90,71 +61,59 @@ func (d *DataModel) ToggleFlag(w http.ResponseWriter, r *http.Request) {
 	flag.Status = togglef.Status
 	flag.DisplayName = fmt.Sprintf("__%v", flag.Status) // hacky way to clue it's a toggle action, see flag update hook
 	err = d.DB.Select("status").Updates(&flag).Error
+
 	if err != nil {
-		utils.NoRecordResponse(w, r, err)
-		return
+		utils.ErrLog.Printf("failed to toggle flag: %v", err)
+		return nil, nil, err
 	}
+
 	d.DB.First(&flag, id)
-	response := models.FlagNoAudsResponse{Flag: &flag}
-	pub := FlagUpdateForPublisher(d.DB, []models.Flag{flag})
-	PublishContent(&pub, "flag-toggle-channel")
+	res := models.FlagNoAudsResponse{Flag: &flag}
+	pub := d.FlagUpdateForPublisher([]models.Flag{flag})
 
-	RefreshCache(d.DB)
+	pubret, err := models.ToJSON(pub)
+	resret, err := models.ToJSON(res)
 
-	utils.UpdatedResponse(w, r, &response)
+	return pubret, resret, err
 }
 
-func (d *DataModel) UpdateAudience(w http.ResponseWriter, r *http.Request) {
-	var req models.Audience
+func (d *DataModel) UpdateAudience(req *[]byte, id int) (pub *[]byte, res *[]byte, err error) {
+	var update models.Audience
+	var existing models.Audience
 
-	vars := mux.Vars(r)
-	id, err := strconv.Atoi(vars["id"])
+	err = json.Unmarshal(*req, &update)
 	if err != nil {
-		w.WriteHeader(400)
-		w.Write([]byte("Invalid resource ID."))
-		return
+		utils.ErrLog.Printf("failed to unmarshal request: %v", err)
+		return nil, nil, err
 	}
 
-	defer r.Body.Close()
-	body, err := ioutil.ReadAll(r.Body)
+	d.DB.Find(&existing, id)
+	existing.Update(&update)
 
-	if err != nil {
-		utils.BadRequestResponse(w, r, err)
-		return
-	}
-
-	err = json.Unmarshal(body, &req)
-	if err != nil {
-		utils.BadRequestResponse(w, r, err)
-		return
-	}
-
-	aud := BuildAudUpdate(req, id, d)
-
-	if req.Conditions != nil {
-		d.DB.Model(&aud).Association("Conditions").Replace(aud.Conditions)
+	if update.Conditions != nil {
+		d.DB.Model(&existing).Association("Conditions").Replace(existing.Conditions)
 	}
 
 	err = d.DB.Session(&gorm.Session{
 		FullSaveAssociations: true,
 		SkipHooks:            true,
-	}).Updates(&aud).Error
+	}).Updates(&existing).Error
 	if err != nil {
-		utils.BadRequestResponse(w, r, err)
-		return
+		utils.ErrLog.Printf("failed to update audience: %v", err)
+		return nil, nil, err
 	}
 
-	d.DB.Model(&models.Audience{}).Preload("Flags").Preload("Conditions").Find(&aud)
+	d.DB.Model(&models.Audience{}).Preload("Flags").Preload("Conditions").Find(&existing)
 
-	response := models.AudienceResponse{
-		Audience:   &aud,
-		Conditions: GetEmbeddedConds(aud, d.DB),
-		Flags:      GetEmbeddedFlags(aud.Flags),
+	aud := models.AudienceResponse{
+		Audience:   &existing,
+		Conditions: d.GetEmbeddedConds(existing),
+		Flags:      d.GetEmbeddedFlags(existing.Flags),
 	}
 
-	pub := FlagUpdateForPublisher(d.DB, aud.Flags)
-	PublishContent(&pub, "flag-update-channel")
-	RefreshCache(d.DB)
+	pubmap := d.FlagUpdateForPublisher(existing.Flags)
+	pub, err = models.ToJSON(pubmap)
+	res, err = models.ToJSON(aud)
 
-	utils.CreatedResponse(w, r, &response)
+	return
 }

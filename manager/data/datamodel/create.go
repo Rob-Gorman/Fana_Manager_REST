@@ -15,7 +15,7 @@ func (d *DataModel) CreateFlag(req *[]byte) (*[]byte, error) {
 		return nil, err
 	}
 
-	flag := FlagReqToFlag(flagReq, d) // can refactor to models?
+	flag := d.FlagReqToFlag(flagReq) // can refactor to models?
 
 	err = d.DB.Omit("Audiences.*").Session(&gorm.Session{FullSaveAssociations: true}).Create(&flag).Error
 	if err != nil {
@@ -31,12 +31,12 @@ func (d *DataModel) CreateFlag(req *[]byte) (*[]byte, error) {
 		})
 	}
 
-	flResp := models.FlagResponse{
+	res := models.FlagResponse{
 		Flag:      &flag,
 		Audiences: respAuds,
 	}
 
-	return flResp.ToJSON()
+	return models.ToJSON(res)
 }
 
 func (d *DataModel) CreateAttribute(req *[]byte) (*[]byte, error) {
@@ -54,7 +54,7 @@ func (d *DataModel) CreateAttribute(req *[]byte) (*[]byte, error) {
 
 	d.DB.Find(&attrReq)
 
-	return attrReq.ToJSON()
+	return models.ToJSON(attrReq)
 }
 
 func (d *DataModel) CreateAudience(req *[]byte) (*[]byte, error) {
@@ -75,7 +75,7 @@ func (d *DataModel) CreateAudience(req *[]byte) (*[]byte, error) {
 	// can we refactor?
 	conds := d.GetEmbeddedConds(aud)
 
-	resAud := aud.ToResponse(conds)
+	res := aud.ToResponse(conds)
 
-	return resAud.ToJSON()
+	return models.ToJSON(res)
 }

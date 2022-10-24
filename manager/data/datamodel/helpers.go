@@ -25,8 +25,17 @@ func (d *DataModel) GetEmbeddedConds(aud models.Audience) []models.ConditionEmbe
 	return conds
 }
 
-// this needs to be refactored
-func FlagReqToFlag(flagReq models.FlagSubmit, d *DataModel) (flag models.Flag) {
+func (d *DataModel) GetEmbeddedFlags(flags []models.Flag) []models.FlagNoAudsResponse {
+	fr := []models.FlagNoAudsResponse{}
+	for i := range flags {
+		fr = append(fr, models.FlagNoAudsResponse{Flag: &flags[i]})
+	}
+
+	return fr
+}
+
+// refactor out DB dependency?
+func (d *DataModel) FlagReqToFlag(flagReq models.FlagSubmit) (flag models.Flag) {
 	auds := []models.Audience{}
 
 	d.DB.Where("key in (?)", flagReq.Audiences).Find(&auds)
@@ -41,7 +50,7 @@ func FlagReqToFlag(flagReq models.FlagSubmit, d *DataModel) (flag models.Flag) {
 	return flag
 }
 
-func FlagToFlagResponse(flag models.Flag, d *DataModel) models.FlagResponse {
+func (d *DataModel) FlagToFlagResponse(flag models.Flag) models.FlagResponse {
 	d.DB.Preload("Audiences").First(&flag)
 	respAuds := []models.AudienceNoCondsResponse{}
 	for ind := range flag.Audiences {
@@ -53,7 +62,7 @@ func FlagToFlagResponse(flag models.Flag, d *DataModel) models.FlagResponse {
 	}
 }
 
-func BuildAudUpdate(req models.Audience, id int, d *DataModel) (aud models.Audience) {
+func buildAudUpdate(req models.Audience, id int, d *DataModel) (aud models.Audience) {
 	d.DB.Find(&aud, id)
 	aud.Conditions = req.Conditions
 	aud.Combine = req.Combine
@@ -61,16 +70,7 @@ func BuildAudUpdate(req models.Audience, id int, d *DataModel) (aud models.Audie
 	return aud
 }
 
-func GetEmbeddedFlags(flags []models.Flag) []models.FlagNoAudsResponse {
-	fr := []models.FlagNoAudsResponse{}
-	for i := range flags {
-		fr = append(fr, models.FlagNoAudsResponse{Flag: &flags[i]})
-	}
-
-	return fr
-}
-
-func BuildAttrResponse(a models.Attribute, d *DataModel) models.AttributeResponse {
+func (d *DataModel) BuildAttrResponse(a models.Attribute) models.AttributeResponse {
 	conds := a.Conditions
 	audids := []uint{}
 	for _, cond := range conds {
@@ -105,12 +105,11 @@ func (d *DataModel) RefreshCache() {
 }
 
 func OrphanedAud(aud *models.Audience) bool {
-	return len((*aud).Flags) == 0
+	return len(aud.Flags) == 0
 }
 
-func OrphanedAttr(attr *models.Attribute, d *DataModel) bool {
-	asscs := d.DB.Model(attr).Association("Conditions").Count()
-	return asscs == 0
+func OrphanedAttr(attr *models.Attribute) bool {
+	return len(attr.Conditions) == 0
 }
 
 func NewSDKKey(s string) string {

@@ -59,3 +59,9 @@ type Sdkkey struct {
 	UpdatedAt time.Time      `json:"updated_at"`
 	DeletedAt gorm.DeletedAt `json:"deleted_at" gorm:"index"`
 }
+
+func (aud *Audience) Update(req *Audience) {
+	aud.Conditions = req.Conditions
+	aud.Combine = req.Combine
+	aud.DisplayName = req.DisplayName
+}

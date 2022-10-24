@@ -1,11 +1,13 @@
 package api
 
 import (
-	"log"
+	"fmt"
 	"manager/data/datamodel"
 	"manager/handlers"
 	"manager/publisher"
 	"manager/utils"
+	"net/http"
+	"time"
 
 	"github.com/gorilla/mux"
 )
@@ -18,12 +20,12 @@ type App struct {
 func NewApp() *App {
 	dm, err := datamodel.New()
 	if err != nil {
-		log.Fatal(utils.DBConnError(err))
+		utils.ErrLog.Falalf("%v", utils.DBConnError(err))
 	}
 
 	pub, err := publisher.NewDefaultPublisher()
 	if err != nil {
-		log.Println(utils.RedisConnErr(err))
+		utils.ErrLog.Falalf("%v", utils.RedisConnErr(err))
 	}
 
 	app := &App{
@@ -33,6 +35,20 @@ func NewApp() *App {
 
 	app.register()
 	return app
+}
+
+func (app App) NewServer() *http.Server {
+	addr := fmt.Sprintf(":%s", utils.GetEnvVar("PORT"))
+	utils.InfoLog.Printf("Serving flag configuration at %s", addr)
+	
+	return &http.Server{
+		Addr:         addr,
+		Handler:      app.Router,
+		ReadTimeout:  1 * time.Second,
+		WriteTimeout: 1 * time.Second,
+		IdleTimeout:  120 * time.Second,
+		ErrorLog:     utils.ErrLog.Logger,
+	}
 }
 
 func (app *App) register() {

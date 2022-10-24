@@ -3,7 +3,6 @@ package publisher
 import (
 	"context"
 	"fmt"
-	"manager/configs"
 	"manager/utils"
 
 	"github.com/go-redis/redis/v8"
@@ -14,11 +13,11 @@ type Pub struct {
 }
 
 func defaultRedisClient() (client *redis.Client, err error) {
-	configs.LoadDotEnv()
+	utils.LoadDotEnv()
 
 	client = redis.NewClient(&redis.Options{
-		Addr:     fmt.Sprintf("%s:%s", configs.GetEnvVar("REDIS_HOST"), configs.GetEnvVar("REDIS_PORT")),
-		Password: configs.GetEnvVar("REDIS_PW"),
+		Addr:     fmt.Sprintf("%s:%s", utils.GetEnvVar("REDIS_HOST"), utils.GetEnvVar("REDIS_PORT")),
+		Password: utils.GetEnvVar("REDIS_PW"),
 		DB:       0, // default
 	})
 

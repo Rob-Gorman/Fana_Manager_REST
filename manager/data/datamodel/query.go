@@ -1,13 +1,8 @@
 package datamodel
 
 import (
-	"fmt"
 	"manager/data/models"
 	"manager/utils"
-	"net/http"
-	"strconv"
-
-	"github.com/gorilla/mux"
 )
 
 func (d *DataModel) GetAllFlags() (*[]byte, error) {
@@ -51,6 +46,7 @@ func (d *DataModel) GetFlag(id int) (*[]byte, error) {
 
 	err := d.DB.Preload("Audiences").First(&flag, id).Error
 	if err != nil {
+		utils.ErrLog.Printf("could not find flag %d: %v", id, err)
 		return nil, err
 	}
 
@@ -62,57 +58,40 @@ func (d *DataModel) GetFlag(id int) (*[]byte, error) {
 	return models.ToJSON(res)
 }
 
-func (d *DataModel) GetAudience() (*[]byte, error) {
-	vars := mux.Vars(r)
-	id, err := strconv.Atoi(vars["id"])
-	if err != nil {
-		w.WriteHeader(400)
-		w.Write([]byte("Invalid audience ID."))
-		return
-	}
-
+func (d *DataModel) GetAudience(id int) (*[]byte, error) {
 	var aud models.Audience
 
-	err = d.DB.Preload("Flags").Preload("Conditions").First(&aud, id).Error
+	err := d.DB.Preload("Flags").Preload("Conditions").First(&aud, id).Error
 
 	if err != nil {
-		utils.NoRecordResponse(w, r, err)
-		return
+		utils.ErrLog.Printf("could not find audience %d: %v", id, err)
+		return nil, err
 	}
 
-	conds := GetEmbeddedConds(aud, d.DB)
-	flags := GetEmbeddedFlags(aud.Flags)
+	conds := d.GetEmbeddedConds(aud)       // can we do the DB work elsewhere?
+	flags := d.GetEmbeddedFlags(aud.Flags) // no db calls - move to Models?
 
-	response := models.AudienceResponse{
+	res := models.AudienceResponse{
 		Audience:   &aud,
 		Conditions: conds,
 		Flags:      flags,
 	}
 
-	utils.PayloadResponse(w, r, &response)
+	return models.ToJSON(res)
 }
 
-func (d *DataModel) GetAttribute() (*[]byte, error) {
-	vars := mux.Vars(r)
-	id, err := strconv.Atoi(vars["id"])
-	if err != nil {
-		w.WriteHeader(400)
-		w.Write([]byte("Invalid attribute ID."))
-		return
-	}
-
+func (d *DataModel) GetAttribute(id int) (*[]byte, error) {
 	var attr models.Attribute
 
-	err = d.DB.Preload("Conditions").First(&attr, id).Error
+	err := d.DB.Preload("Conditions").First(&attr, id).Error
 
 	if err != nil {
-		utils.NoRecordResponse(w, r, err)
-		return
+		utils.ErrLog.Printf("could not find attribute %d: %v", id, err)
+		return nil, err
 	}
 
-	response := BuildAttrResponse(attr, d)
-
-	utils.PayloadResponse(w, r, &response)
+	res := d.BuildAttrResponse(attr)
+	return models.ToJSON(res)
 }
 
 func (d *DataModel) GetAuditLogs() (*[]byte, error) {
@@ -125,17 +104,17 @@ func (d *DataModel) GetAuditLogs() (*[]byte, error) {
 	attrs := []models.AttributeLog{}
 	d.DB.Find(&attrs)
 
-	response := models.AuditResponse{
+	res := models.AuditResponse{
 		FlagLogs:      flags,
 		AudienceLogs:  auds,
 		AttributeLogs: attrs,
 	}
 
-	utils.PayloadResponse(w, r, &response)
+	return models.ToJSON(res)
 }
 
-func (d *DataModel) GetSdkKeys(w http.ResponseWriter, r *http.Request) {
+func (d *DataModel) GetSdkKeys() (*[]byte, error) {
 	sdks := []models.Sdkkey{}
 	d.DB.Find(&sdks)
-	utils.PayloadResponse(w, r, &sdks)
+	return models.ToJSON(&sdks)
 }

@@ -27,6 +27,11 @@ type CondInst struct {
 	Vals        []string `json:"vals"`
 }
 
+func (d *DataModel) GetFlagset() (*[]byte, error) {
+	fs := d.BuildFlagset()
+	return models.ToJSON(fs)
+}
+
 func (d *DataModel) BuildFlagset() (fs *Flagset) {
 	db := d.DB
 	
@@ -41,7 +46,8 @@ func (d *DataModel) BuildFlagset() (fs *Flagset) {
 	return fs
 }
 
-func FlagUpdateForPublisher(db *gorm.DB, fls []models.Flag) map[string]Flagrule {
+func (d *DataModel) FlagUpdateForPublisher(fls []models.Flag) map[string]Flagrule {
+	db := d.DB
 	ids := []uint{}
 	for _, fl := range fls {
 		ids = append(ids, fl.ID)

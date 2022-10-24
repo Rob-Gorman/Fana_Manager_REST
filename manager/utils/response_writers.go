@@ -47,6 +47,12 @@ func UnavailableResponse(w http.ResponseWriter, r *http.Request, err error) {
 
 func MalformedIDResponse(w http.ResponseWriter, r *http.Request, t, id string) {
 	msg := fmt.Sprintf("invalid %s id param: %s", t, id)
-	w.WriteHeader(http.StatusBadRequest)
+	ErrorResponse(w,r,http.StatusBadRequest, msg)
+}
+
+// migrate all error messages here
+// should `msg` type be any?
+func ErrorResponse(w http.ResponseWriter, r *http.Request, status int, msg string) {
+	w.WriteHeader(status)
 	w.Write([]byte(msg))
 }

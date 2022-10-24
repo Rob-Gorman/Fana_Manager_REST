@@ -26,9 +26,9 @@ func (h *Handler) ComposeResponse(w http.ResponseWriter, r *http.Request, res *[
 }
 
 // services extracted to one location
-func (h *Handler) ProcessServices(res *[]byte, channel string) {
-	if channel != "" {
-		h.Pub.PublishContent(res, channel)
+func (h *Handler) ProcessServices(res *[]byte, topic string) {
+	if topic != "" {
+		h.Pub.PublishContent(res, topic)
 	}
 	h.DM.RefreshCache()
 }

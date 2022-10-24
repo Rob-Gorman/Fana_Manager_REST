@@ -2,7 +2,6 @@ package cache
 
 import (
 	"fmt"
-	"manager/configs"
 	"manager/utils"
 	"strconv"
 	"time"
@@ -15,17 +14,18 @@ type FlagCache interface {
 }
 
 func InitFlagCache() FlagCache {
-	address := fmt.Sprintf("%s:%s", configs.GetEnvVar("REDIS_HOST"), configs.GetEnvVar("REDIS_PORT"))
-	db, err := strconv.Atoi(configs.GetEnvVar("REDIS_DB"))
+	address := fmt.Sprintf("%s:%s", utils.GetEnvVar("REDIS_HOST"), utils.GetEnvVar("REDIS_PORT"))
+	db, err := strconv.Atoi(utils.GetEnvVar("REDIS_DB"))
 	if err != nil {
-		utils.HandleErr(err, "error parsing REDIS_DB environment value")
+		utils.ErrLog.Printf("could not parse REDIS_DB environment value: %v", err)
 		return nil
 	}
-	expires, err := time.ParseDuration(configs.GetEnvVar("SECS_TO_EXPIRE"))
 
+	expires, err := time.ParseDuration(utils.GetEnvVar("SECS_TO_EXPIRE"))
 	if err != nil {
-		utils.HandleErr(err, "error parsing SECS_TO_EXPIRE environment value")
+		utils.ErrLog.Printf("could not parse SECS_TO_EXPIRE environment value: %v", err)
 		return nil
 	}
+
 	return NewRedisCache(address, db, expires)
 }

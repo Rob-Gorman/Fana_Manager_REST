@@ -81,31 +81,6 @@ func ToJSON(obj interface{}) (res *[]byte, err error) {
 	return res, err
 }
 
-// return full attribute?
-func (a *Attribute) ToJSON() (res *[]byte, err error) {
-	w := bytes.Buffer{}
-	err = json.NewEncoder(&w).Encode(a)
-	if err != nil {
-		return nil, utils.MarshalError(err)
-	}
-
-	body := w.Bytes()
-	res = &body
-	return res, err
-}
-
-func (a *AudienceResponse) ToJSON() (res *[]byte, err error) {
-	w := bytes.Buffer{}
-	err = json.NewEncoder(&w).Encode(a)
-	if err != nil {
-		return nil, utils.MarshalError(err)
-	}
-
-	body := w.Bytes()
-	res = &body
-	return res, err
-}
-
 func (a *Audience) ToResponse(conds []ConditionEmbedded) *AudienceResponse {
 	return &AudienceResponse{
 		Audience:   a,

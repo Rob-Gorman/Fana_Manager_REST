@@ -1,23 +1,24 @@
 package dev
 
 import (
-	"manager/handlers"
-	"manager/models"
+	"manager/data/datamodel"
+	"manager/data/models"
 
 	"gorm.io/gorm"
 )
 
-func SeedDB(db *gorm.DB) {
+func SeedDB(d *datamodel.DataModel) {
+	db := d.DB
 	seedFlags(db)
 	seedAttributes(db)
 	seedAudiences(db)
 	seedSdks(db)
-	handlers.BuildFlagset(db)
+	d.BuildFlagset()
 }
 
 func seedSdks(db *gorm.DB) {
-	key1 := handlers.NewSDKKey("***-*****-**")
-	key2 := handlers.NewSDKKey("***-*****-**")
+	key1 := datamodel.NewSDKKey("***-*****-**")
+	key2 := datamodel.NewSDKKey("***-*****-**")
 	var sdkkeys = []models.Sdkkey{
 		{Key: key1},
 		{Key: key2, Type: "server"},

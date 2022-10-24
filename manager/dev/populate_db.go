@@ -1,12 +1,12 @@
 package dev
 
 import (
-	"manager/models"
-
-	"gorm.io/gorm"
+	"manager/data/datamodel"
+	"manager/data/models"
 )
 
-func RefreshSchema(db *gorm.DB) {
+func RefreshSchema(d *datamodel.DataModel) {
+	db := d.DB
 	// re-creates them with the defined schema
 	// and seeds some data
 	var tables []interface{}
@@ -24,5 +24,5 @@ func RefreshSchema(db *gorm.DB) {
 	// create all relevant tables
 	db.AutoMigrate(tables...)
 	// seed sample data
-	SeedDB(db)
+	SeedDB(d)
 }

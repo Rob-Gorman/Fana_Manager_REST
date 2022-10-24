@@ -4,106 +4,89 @@ import (
 	"manager/data/models"
 	"manager/utils"
 	"net/http"
-	"strconv"
-
-	"github.com/gorilla/mux"
 )
 
-func (d *DataModel) DeleteFlag(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id, err := strconv.Atoi(vars["id"])
-	if err != nil {
-		w.WriteHeader(400)
-		w.Write([]byte("Invalid flag ID."))
-		return
-	}
-
+func (d *DataModel) DeleteFlag(id int) (int, error) {
 	flag := &models.Flag{}
-	err = d.DB.Preload("Audiences").First(&flag, id).Error
+	err := d.DB.Preload("Audiences").First(&flag, id).Error
 	if err != nil {
-		utils.NoRecordResponse(w, r, err)
-		return
+		utils.ErrLog.Printf("%v", err)
+		return utils.NotFoundErr("flag", id)
 	}
 
-	d.DB.Model(&flag).Association("Audiences").Delete(flag.Audiences)
+	err = d.DB.Model(&flag).Association("Audiences").Delete(flag.Audiences)
+	if err != nil {
+		msg := "unable to delete flag audiences"
+		utils.ErrLog.Printf("%s: %v", msg, err)
+		return utils.UnprocessableErr(msg)
+	}
+
 	err = d.DB.Unscoped().Delete(&flag).Error
 	if err != nil {
-		utils.BadRequestResponse(w, r, err)
-		return
+		msg := "unable to delete flag"
+		utils.ErrLog.Printf("%s: %v", msg, err)
+		return utils.UnprocessableErr(msg)
 	}
-	w.WriteHeader(http.StatusNoContent)
+	return 200, nil
 }
 
-func (d *DataModel) DeleteAudience(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id, err := strconv.Atoi(vars["id"])
+func (d *DataModel) DeleteAudience(id int) (int, error) {
+	aud := &models.Audience{}
+	err := d.DB.Preload("Flags").First(&aud, id).Error
 	if err != nil {
-		w.WriteHeader(400)
-		w.Write([]byte("Invalid audience ID."))
-		return
+		utils.ErrLog.Printf("%v", err)
+		return utils.NotFoundErr("audience", id)
 	}
 
-	aud := &models.Audience{}
-	err = d.DB.Preload("Flags").First(&aud, id).Error
-	if err != nil {
-		utils.NoRecordResponse(w, r, err)
-		return
-	}
 	if !OrphanedAud(aud) {
-		msg := "Cannot delete Audience assigned to Flags."
-		utils.UnprocessableEntityResponse(w, r, nil, msg)
-		return
+		msg := "unable to delete audiences assigned to flags"
+		utils.ErrLog.Printf(msg)
+		return utils.UnprocessableErr(msg)
 	}
 
 	d.DB.Model(&aud).Association("Flags").Delete(aud.Flags)
 	err = d.DB.Unscoped().Delete(&aud).Error
 	if err != nil {
-		utils.BadRequestResponse(w, r, err)
-		return
+		msg := "unable to delete audience"
+		utils.ErrLog.Printf("%s: %v", msg, err)
+		return utils.UnprocessableErr(msg)
 	}
-	w.WriteHeader(http.StatusNoContent)
+	return 200, nil
 }
 
-func (d *DataModel) DeleteAttribute(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id, err := strconv.Atoi(vars["id"])
+func (d *DataModel) DeleteAttribute(id int) (int, error) {
+	attr := &models.Attribute{}
+	err := d.DB.Preload("Conditions").First(attr, id).Error
 	if err != nil {
-		w.WriteHeader(400)
-		w.Write([]byte("Invalid attribute ID."))
-		return
+		utils.ErrLog.Printf("%v", err)
+		return utils.NotFoundErr("attribute", id)
 	}
 
-	attr := &models.Attribute{}
-	err = d.DB.First(attr, id).Error
-	if err != nil {
-		utils.NoRecordResponse(w, r, err)
-		return
-	}
-	if !OrphanedAttr(attr, d) {
-		msg := "Cannot delete Attribute assigned to Audiences."
-		utils.UnprocessableEntityResponse(w, r, nil, msg)
-		return
+	if !OrphanedAttr(attr) {
+		msg := "Cannot delete attribute assigned to audiences"
+		utils.ErrLog.Printf(msg)
+		return utils.UnprocessableErr(msg)
 	}
 
 	err = d.DB.Unscoped().Delete(&attr).Error
 	if err != nil {
-		utils.BadRequestResponse(w, r, err)
-		return
+		msg := "unable to delete audience"
+		utils.ErrLog.Printf("%s: %v", msg, err)
+		return utils.UnprocessableErr(msg)
 	}
-	w.WriteHeader(http.StatusNoContent)
+
+	return 200, nil
 }
 
-func (d *DataModel) RegenSDKkey(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id, err := strconv.Atoi(vars["id"])
-	if err != nil {
-		w.WriteHeader(400)
-		w.Write([]byte("Invalid flag ID."))
-		return
-	}
-
+func (d *DataModel) RegenSDKkey(id int) (*[]byte, int, error) {
 	sdk := models.Sdkkey{}
-	d.DB.Find(&sdk, id)
+
+	err := d.DB.Find(&sdk, id).Error
+	if err != nil {
+		utils.ErrLog.Printf("%v", err)
+		code, err := utils.NotFoundErr("sdk key", id)
+		return nil, code, err
+	}
 
 	newSDK := models.Sdkkey{
 		Key:  NewSDKKey(sdk.Key),
@@ -112,15 +95,16 @@ func (d *DataModel) RegenSDKkey(w http.ResponseWriter, r *http.Request) {
 
 	err = d.DB.Create(&newSDK).Error
 	if err != nil {
-		utils.UnavailableResponse(w, r, err)
-		return
+		msg := "unable to create new SDK key"
+		utils.ErrLog.Printf("%s: %v", msg, err)
+		code, err := utils.InternalErr(msg)
+		return nil, code, err
 	}
 
 	d.DB.Unscoped().Delete(&sdk)
 
 	d.DB.Find(&newSDK)
 
-	RefreshCache(d.DB)
-
-	utils.CreatedResponse(w, r, &newSDK)
+	res, err := models.ToJSON(newSDK)
+	return res, http.StatusCreated, err
 }

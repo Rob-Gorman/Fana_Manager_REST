@@ -1,21 +1,39 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"manager/api"
-	"manager/configs"
 	"manager/dev"
-	"net/http"
+	"manager/utils"
 	"os"
+	"os/signal"
+	"time"
 )
 
 func main() {
-	configs.LoadDotEnv()
+	utils.InitLoggers(nil, nil)
+	utils.LoadDotEnv()
 	app := api.NewApp()
-	dev.RefreshSchema(app.H.DM.DB)
+	dev.RefreshSchema(app.H.DM)
 	fmt.Println("Connected to postgres!")
-	PORT := os.Getenv("PORT")
 
-	fmt.Printf("\nServing flag configuration on PORT %s\n", PORT)
-	http.ListenAndServe(fmt.Sprintf(":%s", PORT), app)
+	srv := app.NewServer()
+
+	go func() {
+		err := srv.ListenAndServe()
+		if err != nil {
+			utils.ErrLog.Falalf("%v", err)
+		}
+	}()
+	// utils.Shutdown(context.Background(), srv) // os.Kill not valid here
+	sigChan := make(chan os.Signal)
+	signal.Notify(sigChan, os.Kill)
+	signal.Notify(sigChan, os.Interrupt)
+
+	sig := <-sigChan // blocks
+	utils.InfoLog.Printf("Shutting down server %v", sig)
+
+	ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
+	srv.Shutdown(ctx)
 }

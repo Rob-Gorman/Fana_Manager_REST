@@ -12,7 +12,7 @@ func (h *Handler) CreateFlag(w http.ResponseWriter, r *http.Request) {
 	res, err := h.DM.CreateFlag(&req)
 	h.ComposeResponse(w, r, res, err)
 
-	h.ProcessServices(res, "flag-update-channel")
+	h.ProcessServices(res, "flag")
 }
 
 func (h *Handler) CreateAttribute(w http.ResponseWriter, r *http.Request) {
@@ -32,5 +32,5 @@ func (h *Handler) CreateAudience(w http.ResponseWriter, r *http.Request) {
 	res, err := h.DM.CreateAudience(&req)
 	h.ComposeResponse(w, r, res, err)
 
-	h.ProcessServices(res, "audience-update-channel")
+	h.ProcessServices(res, "audience")
 }

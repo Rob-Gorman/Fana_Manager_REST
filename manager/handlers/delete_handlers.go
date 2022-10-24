@@ -1,126 +1,67 @@
 package handlers
 
 import (
-	"manager/models"
 	"manager/utils"
 	"net/http"
-	"strconv"
-
-	"github.com/gorilla/mux"
 )
 
 func (h Handler) DeleteFlag(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id, err := strconv.Atoi(vars["id"])
+	id, err := h.idFromParams(w, r, "flag")
 	if err != nil {
-		w.WriteHeader(400)
-		w.Write([]byte("Invalid flag ID."))
 		return
 	}
 
-	flag := &models.Flag{}
-	err = h.DB.Preload("Audiences").First(&flag, id).Error
+	code, err := h.DM.DeleteFlag(id)
 	if err != nil {
-		utils.NoRecordResponse(w, r, err)
+		utils.ErrorResponse(w, r, code, err.Error())
 		return
 	}
 
-	h.DB.Model(&flag).Association("Audiences").Delete(flag.Audiences)
-	err = h.DB.Unscoped().Delete(&flag).Error
-	if err != nil {
-		utils.BadRequestResponse(w, r, err)
-		return
-	}
 	w.WriteHeader(http.StatusNoContent)
 }
 
 func (h Handler) DeleteAudience(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id, err := strconv.Atoi(vars["id"])
+	id, err := h.idFromParams(w, r, "audience")
 	if err != nil {
-		w.WriteHeader(400)
-		w.Write([]byte("Invalid audience ID."))
 		return
 	}
 
-	aud := &models.Audience{}
-	err = h.DB.Preload("Flags").First(&aud, id).Error
+	code, err := h.DM.DeleteAudience(id)
 	if err != nil {
-		utils.NoRecordResponse(w, r, err)
-		return
-	}
-	if !OrphanedAud(aud) {
-		msg := "Cannot delete Audience assigned to Flags."
-		utils.UnprocessableEntityResponse(w, r, nil, msg)
+		utils.ErrorResponse(w, r, code, err.Error())
 		return
 	}
 
-	h.DB.Model(&aud).Association("Flags").Delete(aud.Flags)
-	err = h.DB.Unscoped().Delete(&aud).Error
-	if err != nil {
-		utils.BadRequestResponse(w, r, err)
-		return
-	}
 	w.WriteHeader(http.StatusNoContent)
 }
 
 func (h Handler) DeleteAttribute(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id, err := strconv.Atoi(vars["id"])
+	id, err := h.idFromParams(w, r, "attribute")
 	if err != nil {
-		w.WriteHeader(400)
-		w.Write([]byte("Invalid attribute ID."))
 		return
 	}
 
-	attr := &models.Attribute{}
-	err = h.DB.First(attr, id).Error
+	code, err := h.DM.DeleteAttribute(id)
 	if err != nil {
-		utils.NoRecordResponse(w, r, err)
-		return
-	}
-	if !OrphanedAttr(attr, h) {
-		msg := "Cannot delete Attribute assigned to Audiences."
-		utils.UnprocessableEntityResponse(w, r, nil, msg)
+		utils.ErrorResponse(w, r, code, err.Error())
 		return
 	}
 
-	err = h.DB.Unscoped().Delete(&attr).Error
-	if err != nil {
-		utils.BadRequestResponse(w, r, err)
-		return
-	}
 	w.WriteHeader(http.StatusNoContent)
 }
 
 func (h Handler) RegenSDKkey(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id, err := strconv.Atoi(vars["id"])
+	id, err := h.idFromParams(w, r, "sdk key")
 	if err != nil {
-		w.WriteHeader(400)
-		w.Write([]byte("Invalid flag ID."))
 		return
 	}
 
-	sdk := models.Sdkkey{}
-	h.DB.Find(&sdk, id)
-
-	newSDK := models.Sdkkey{
-		Key:  NewSDKKey(sdk.Key),
-		Type: sdk.Type,
-	}
-
-	err = h.DB.Create(&newSDK).Error
+	res, code, err := h.DM.RegenSDKkey(id)
 	if err != nil {
-		utils.UnavailableResponse(w, r, err)
+		utils.ErrorResponse(w, r, code, err.Error())
 		return
 	}
 
-	h.DB.Unscoped().Delete(&sdk)
-
-	h.DB.Find(&newSDK)
-
-	RefreshCache(h.DB)
-
-	utils.CreatedResponse(w, r, &newSDK)
+	h.ProcessServices(nil, "")
+	h.ComposeResponse(w, r, res, err)
 }
