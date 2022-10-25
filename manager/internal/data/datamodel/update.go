@@ -3,7 +3,7 @@ package datamodel
 import (
 	"encoding/json"
 	"fmt"
-	"manager/data/models"
+	"manager/internal/data/models"
 	"manager/utils"
 
 	"gorm.io/gorm"

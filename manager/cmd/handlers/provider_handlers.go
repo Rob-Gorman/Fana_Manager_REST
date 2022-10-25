@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"manager/cache"
+	"manager/internal/cache"
 	"net/http"
 )
 

@@ -1,8 +1,8 @@
 package handlers
 
 import (
-	dm "manager/data/datamodel"
-	pub "manager/publisher"
+	dm "manager/internal/data/datamodel"
+	pub "manager/internal/publisher"
 	"manager/utils"
 	"net/http"
 )

@@ -1,14 +1,22 @@
-FROM node as builder
+# build static React app files
+FROM node AS static
+
 WORKDIR /reactapp
-COPY manager-dash .
+COPY ./dashboard .
 RUN npm i
 RUN npm run build
 
-FROM golang:latest as manager
+# build Go API binary
+FROM golang AS build
 
-WORKDIR /go/src/gomanager
-COPY . .
-COPY --from=builder /reactapp/build ./build
-RUN go mod tidy
-EXPOSE 3000
-CMD ["go", "run", "main.go"]
+WORKDIR /go/src/manager
+COPY ./manager .
+COPY --from=static /reactapp/build ./static
+RUN go mod download
+RUN CGO_ENABLED=0 go build -o /fanamanager
+
+# final container with binary
+FROM scratch
+
+COPY --from=build /fanamanager /fanamanager
+ENTRYPOINT [ "/fanamanager" ]

@@ -1,7 +1,7 @@
 package datamodel
 
 import (
-	"manager/data/models"
+	"manager/internal/data/models"
 	"strings"
 
 	"gorm.io/gorm"

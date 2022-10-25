@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"manager/api"
+	"manager/cmd/api"
 	"manager/dev"
 	"manager/utils"
 	"os"

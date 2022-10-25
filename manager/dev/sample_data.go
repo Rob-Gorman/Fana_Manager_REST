@@ -1,8 +1,8 @@
 package dev
 
 import (
-	"manager/data/datamodel"
-	"manager/data/models"
+	"manager/internal/data/datamodel"
+	"manager/internal/data/models"
 
 	"gorm.io/gorm"
 )

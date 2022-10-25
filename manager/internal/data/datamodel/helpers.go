@@ -1,8 +1,8 @@
 package datamodel
 
 import (
-	"manager/cache"
-	"manager/data/models"
+	"manager/internal/cache"
+	"manager/internal/data/models"
 	"math/rand"
 	"time"
 )

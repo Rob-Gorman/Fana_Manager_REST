@@ -2,9 +2,9 @@ package api
 
 import (
 	"fmt"
-	"manager/data/datamodel"
-	"manager/handlers"
-	"manager/publisher"
+	"manager/internal/data/datamodel"
+	"manager/cmd/handlers"
+	"manager/internal/publisher"
 	"manager/utils"
 	"net/http"
 	"time"
