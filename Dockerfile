@@ -12,8 +12,6 @@ FROM golang AS build
 WORKDIR /go/src/manager
 COPY ./manager .
 COPY --from=static /reactapp/build ./cmd/static
-RUN ls ./cmd/static -a
-RUN ls ./cmd/static/static -a
 RUN go mod tidy
 RUN CGO_ENABLED=0 go build -o /fanamanager ./cmd
 
