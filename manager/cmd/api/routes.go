@@ -1,6 +1,9 @@
 package api
 
-import "net/http"
+import (
+	"io/fs"
+	"net/http"
+)
 
 func (a *App) dashboardRoutes() {
 	a.HandleFunc("/api/flags/{id}", a.H.GetFlag).Methods("GET")
@@ -31,9 +34,12 @@ func (a *App) providerRoutes() {
 	a.HandleFunc("/flagset", a.H.GetFlagset).Methods("GET")
 }
 
-func (a *App) staticRoutes() {
-	a.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./build/static/")))).Methods("GET")
+func (a *App) staticRoutes(static fs.FS) {
+	staticDir, _ := fs.Sub(static, "static")
+	staticFS := http.FS(staticDir)
+	// a.Handle("/", http.FileServer(staticFS)).Methods("GET")
+	a.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(staticFS))).Methods("GET")
 	a.PathPrefix("/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "./build/index.html")
+		http.ServeFile(w, r, "./cmd/static/index.html")
 	}).Methods("GET")
 }

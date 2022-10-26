@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"fmt"
 	"log"
 	"os"
 )
@@ -34,9 +35,11 @@ func NewFanaLogger(l *log.Logger) FanaLogger {
 }
 
 func (l *FanaLogger) Printf(format string, args ...interface{}) {
-	l.Logger.Printf(format, args...)
+	msg := fmt.Sprintf(format, args...)
+	l.Logger.Output(2, msg)
 }
 
 func (l *FanaLogger) Falalf(format string, args ...interface{}) {
-	l.Logger.Fatalf(format, args...)
+	msg := fmt.Sprintf(format, args...)
+	l.Logger.Output(2, msg)
 }

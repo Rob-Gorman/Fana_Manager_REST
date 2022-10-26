@@ -2,8 +2,9 @@ package api
 
 import (
 	"fmt"
-	"manager/internal/data/datamodel"
+	"io/fs"
 	"manager/cmd/handlers"
+	"manager/internal/data/datamodel"
 	"manager/internal/publisher"
 	"manager/utils"
 	"net/http"
@@ -17,7 +18,7 @@ type App struct {
 	H *handlers.Handler
 }
 
-func NewApp() *App {
+func NewApp(static fs.FS) *App {
 	dm, err := datamodel.New()
 	if err != nil {
 		utils.ErrLog.Falalf("%v", utils.DBConnError(err))
@@ -33,7 +34,7 @@ func NewApp() *App {
 		Router: mux.NewRouter(),
 	}
 
-	app.register()
+	app.register(static)
 	return app
 }
 
@@ -51,8 +52,8 @@ func (app App) NewServer() *http.Server {
 	}
 }
 
-func (app *App) register() {
+func (app *App) register(staticFS fs.FS) {
 	app.dashboardRoutes()
 	app.providerRoutes()
-	app.staticRoutes()
+	app.staticRoutes(staticFS)
 }

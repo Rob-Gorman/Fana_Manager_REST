@@ -14,7 +14,7 @@ func (h Handler) idFromParams(w http.ResponseWriter, r *http.Request, relation s
 	id, err = strconv.Atoi(idParam)
 
 	if err != nil {
-		msg := fmt.Sprintf("invalid %s id param: %s", relation, id)
+		msg := fmt.Sprintf("invalid %s id param: %d", relation, id)
 		utils.ErrLog.Printf(msg)
 		utils.ErrorResponse(w, r, http.StatusBadRequest, msg)
 	}

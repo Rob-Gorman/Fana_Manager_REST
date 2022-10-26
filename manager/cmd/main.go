@@ -2,19 +2,24 @@ package main
 
 import (
 	"context"
+	"embed"
 	"fmt"
 	"manager/cmd/api"
 	"manager/dev"
 	"manager/utils"
 	"os"
 	"os/signal"
+	"syscall"
 	"time"
 )
+
+//go:embed static/*
+var static embed.FS
 
 func main() {
 	utils.InitLoggers(nil, nil)
 	utils.LoadDotEnv()
-	app := api.NewApp()
+	app := api.NewApp(static)
 	dev.RefreshSchema(app.H.DM)
 	fmt.Println("Connected to postgres!")
 
@@ -26,10 +31,9 @@ func main() {
 			utils.ErrLog.Falalf("%v", err)
 		}
 	}()
-	// utils.Shutdown(context.Background(), srv) // os.Kill not valid here
-	sigChan := make(chan os.Signal)
-	signal.Notify(sigChan, os.Kill)
-	signal.Notify(sigChan, os.Interrupt)
+
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGTERM, syscall.SIGINT)
 
 	sig := <-sigChan // blocks
 	utils.InfoLog.Printf("Shutting down server %v", sig)
