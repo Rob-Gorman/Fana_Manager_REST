@@ -1,59 +1,19 @@
-############################
-# STEP 1 build UI
-############################
-FROM --platform=linux/amd64 node:16-alpine AS builder_node
+# build static React app files
+FROM node AS static
 
-# Install build dependencies
-RUN apk add --update --no-cache git make
+WORKDIR /reactapp
+COPY ./_ui .
+RUN npm i
+RUN npm run build
 
-# Prepare working directory
-RUN mkdir -p /code/_ui
-WORKDIR /code
-
-# Copy minimum set for npm install first, allows for better caching
-COPY Makefile .
-COPY _ui/package-lock.json ./_ui
-COPY _ui/package.json ./_ui
-RUN make _ui/node_modules
-
-# Copy the rest of the files and build the UI
-COPY _ui ./_ui
-RUN make _ui/build
-
-############################
-# STEP 2 build server
-############################
-FROM --platform=linux/amd64 golang:1.18-alpine AS builder_golang
-
-# Install build dependencies
-RUN apk add --update --no-cache git make openssh-client
-
-# Prepare working directory
-RUN mkdir -p /code
-WORKDIR /code
-
-# Fetch dependencies
-COPY ./manager/go.mod ./manager/go.sum ./
-RUN go mod download
-
-# Copy the rest of the files and build the server
+# build Go API binary
+FROM golang AS build
+WORKDIR /go/src/manager
 COPY ./manager .
-COPY Makefile .
-COPY --from=builder_node /code/_ui/build /code/_ui/build
-RUN ls -a
-RUN ls cmd -a
-RUN make build/server
+COPY --from=static /reactapp/build ./cmd/build
+RUN CGO_ENABLED=0 go build -o /fanamanager ./cmd/main.go
 
-############################
-# STEP 3 build a small image to run it all
-############################
-FROM --platform=linux/amd64 scratch
-
-# Copy TLS certificates
-# COPY --from=alpine:latest /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
-
-# Copy our static executable
-COPY --from=builder_golang /code/build/server /go/bin/react-go-server
-
-EXPOSE 8080
-ENTRYPOINT ["/go/bin/react-go-server"]
+# final container with binary
+FROM scratch
+COPY --from=build /fanamanager /fanamanager
+ENTRYPOINT [ "/fanamanager" ]

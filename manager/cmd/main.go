@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-//go:embed static/*
+//go:embed build/*
 var static embed.FS
 
 func main() {

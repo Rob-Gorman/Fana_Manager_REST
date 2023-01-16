@@ -2,14 +2,14 @@ version: "3"
 
 services:
   manager:
-    image: 'fanatest' #'fana-manager:2.0.1'
+    image: 'fana-manager:2.0.1'
     ports:
       - "3000:3000"
     environment:
       - DB_HOST=postgres
       - DB_NAME=postgres
       - DB_USER=postgres
-      - DB_PW=postgres
+      - DB_PW=postgres #{DB_PW}
       - DB_PORT=5432
       - PORT=3000
       - REDIS_PORT=6379
@@ -27,7 +27,7 @@ services:
     volumes:
       - fana-postgres-data:/var/lib/postgresql/data/pgdata
     environment:
-      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_PASSWORD=postgres #{DB_PW}
       - PGDATA=/var/lib/postgresql/data/pgdata
   redis:
     image: redis
