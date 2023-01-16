@@ -39,13 +39,7 @@ func (a *App) staticRoutes(static fs.FS) {
 	rootFS := http.FS(rootDir)
 	staticDir, _ := fs.Sub(static, "build/static")
 	staticFS := http.FS(staticDir)
-	// a.Handle("/", http.FileServer(staticFS)).Methods("GET")
+	
 	a.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(staticFS))).Methods("GET")
-	// a.PathPrefix("/static/").Handler(http.FileServer(staticFS)).Methods("GET")
 	a.PathPrefix("/").Handler(http.FileServer(rootFS)).Methods("GET")
-	// a.PathPrefix("/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-	// 	utils.InfoLog.Printf("trying to serve '/' path")
-	// 	http.ServeFile(w, r, "./build/index.html")
-	// }).Methods("GET")
-	// a.PathPrefix("/static/").Subrouter()
 }
