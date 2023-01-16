@@ -70,14 +70,16 @@ func (fr *FlagResponse) ToJSON() (res *[]byte, err error) {
 }
 
 func ToJSON(obj interface{}) (res *[]byte, err error) {
-	w := bytes.Buffer{}
-	err = json.NewEncoder(&w).Encode(&obj)
+	// w := bytes.Buffer{}
+	resP, err := json.Marshal(&obj)
 	if err != nil {
+		utils.ErrLog.Printf("did not marshal to json %v", err)
 		return nil, utils.MarshalError(err)
 	}
 
-	body := w.Bytes()
-	res = &body
+	// body := w.Bytes()
+	// res = &body
+	res = &resP
 	return res, err
 }
 
@@ -91,8 +93,11 @@ func (a *Audience) ToResponse(conds []ConditionEmbedded) *AudienceResponse {
 
 func AllFlagsRes(fs *[]Flag) (res []FlagNoAudsResponse) {
 	for ind := range *fs {
-		res = append(res, FlagNoAudsResponse{Flag: &(*fs)[ind]})
+		flag := (*fs)[ind]
+		utils.InfoLog.Printf("flag being appended to response: %v", flag.Key)
+		res = append(res, FlagNoAudsResponse{Flag: &flag})
 	}
+	
 	return
 }
 

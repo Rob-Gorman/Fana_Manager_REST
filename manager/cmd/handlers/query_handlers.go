@@ -1,11 +1,16 @@
 package handlers
 
 import (
+	"manager/utils"
 	"net/http"
 )
 
 func (h Handler) GetAllFlags(w http.ResponseWriter, r *http.Request) {
 	res, err := h.DM.GetAllFlags()
+
+	if err != nil {
+		utils.ErrLog.Falalf("failed to return flags %v", err)
+	}
 
 	h.ComposeResponse(w, r, res, err)
 }

@@ -7,9 +7,10 @@ import (
 
 func (d *DataModel) GetAllFlags() (*[]byte, error) {
 	var flags *[]models.Flag
-	err := d.DB.Find(flags).Error
+	err := d.DB.Find(&flags).Error
 
 	if err != nil {
+		utils.ErrLog.Printf("DB can't find flags %v", err)
 		return nil, err
 	}
 

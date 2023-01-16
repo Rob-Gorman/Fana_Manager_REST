@@ -3,6 +3,7 @@ package api
 import (
 	"io/fs"
 	"net/http"
+	"os"
 )
 
 func (a *App) dashboardRoutes() {
@@ -35,11 +36,12 @@ func (a *App) providerRoutes() {
 }
 
 func (a *App) staticRoutes(static fs.FS) {
-	staticDir, _ := fs.Sub(static, "static")
+	staticDir, _ := fs.Sub(os.DirFS("./cmd/static"), "static")
 	staticFS := http.FS(staticDir)
 	// a.Handle("/", http.FileServer(staticFS)).Methods("GET")
 	a.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(staticFS))).Methods("GET")
 	a.PathPrefix("/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "./cmd/static/index.html")
 	}).Methods("GET")
+	// a.PathPrefix("/static/").Subrouter()
 }

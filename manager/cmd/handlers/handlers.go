@@ -22,7 +22,7 @@ func (h *Handler) ComposeResponse(w http.ResponseWriter, r *http.Request, res *[
 		return
 	}
 
-	utils.CreatedResponse(w, r, &res)
+	utils.PayloadResponse(w, r, res)
 }
 
 // services extracted to one location

@@ -2,7 +2,8 @@
 FROM node AS static
 
 WORKDIR /reactapp
-COPY ./dashboard .
+COPY ./_ui .
+RUN echo 'react container wd' && ls -a
 RUN npm i
 RUN npm run build
 
@@ -12,11 +13,13 @@ FROM golang AS build
 WORKDIR /go/src/manager
 COPY ./manager .
 COPY --from=static /reactapp/build ./cmd/static
-RUN go mod tidy
+RUN ls cmd/static -a
+RUN go mod download
 RUN CGO_ENABLED=0 go build -o /fanamanager ./cmd
 
 # final container with binary
-FROM scratch
+FROM alpine
 
+RUN apk add --no-cache bash
 COPY --from=build /fanamanager /fanamanager
 ENTRYPOINT [ "/fanamanager" ]

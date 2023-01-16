@@ -16,6 +16,10 @@ func Init() (*gorm.DB, error) {
 		PreferSimpleProtocol: true,
 	}), &gorm.Config{})
 
+	if err != nil {
+		utils.ErrLog.Printf("DB cannot connect %v", err)
+	}
+
 	return DB, err
 }
 

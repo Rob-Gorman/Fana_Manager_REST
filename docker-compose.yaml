@@ -2,7 +2,7 @@ version: "3"
 
 services:
   manager:
-    image: 'fana-manager:2.0.1'
+    image: 'fanatest' #'fana-manager:2.0.1'
     ports:
       - "3000:3000"
     environment:
@@ -13,9 +13,9 @@ services:
       - DB_PORT=5432
       - PORT=3000
       - REDIS_PORT=6379
-      - REDIS_HOST=${REDIS_HOST}
-      - REDIS_DB=${REDIS_DB}
-      - REDIS_PW=${REDIS_PW}
+      - REDIS_HOST=my-redis #${REDIS_HOST}
+      - REDIS_DB=0 #${REDIS_DB}
+      - REDIS_PW=mypassword #${REDIS_PW}
       - SECS_TO_EXPIRE=1000000s
     depends_on:
       - postgres
@@ -24,6 +24,8 @@ services:
     image: postgres
     ports:
       - "5432:5432"
+    volumes:
+      - fana-postgres-data:/var/lib/postgresql/data/pgdata
     environment:
       - POSTGRES_PASSWORD=postgres
       - PGDATA=/var/lib/postgresql/data/pgdata
@@ -33,5 +35,7 @@ services:
     ports:
       - "6379:6379"
     environment:
-      - REDIS_PW=${REDIS_PW}
+      - REDIS_PW=mypassword #${REDIS_PW}
     command: redis-server --requirepass mypassword
+volumes:
+  fana-postgres-data:

@@ -1,16 +1,15 @@
 package utils
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 )
 
-func PayloadResponse(w http.ResponseWriter, r *http.Request, payload interface{}) {
-	// generic function to send an HTTP Response with payload
+// generic function to send an HTTP Response with payload
+func PayloadResponse(w http.ResponseWriter, r *http.Request, payload *[]byte) {
 	w.Header().Add("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(payload)
+	w.Write(*payload)
 }
 
 func NoRecordResponse(w http.ResponseWriter, r *http.Request, err error) {
@@ -21,13 +20,15 @@ func NoRecordResponse(w http.ResponseWriter, r *http.Request, err error) {
 func CreatedResponse(w http.ResponseWriter, r *http.Request, payload interface{}) {
 	w.Header().Add("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(payload)
+	// json.NewEncoder(w).Encode(payload)
+	w.Write(payload.([]byte))
 }
 
 func UpdatedResponse(w http.ResponseWriter, r *http.Request, payload interface{}) {
 	w.Header().Add("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(payload)
+	// json.NewEncoder(w).Encode(payload)
+	w.Write(payload.([]byte))
 }
 
 func BadRequestResponse(w http.ResponseWriter, r *http.Request, err error) {
@@ -47,7 +48,7 @@ func UnavailableResponse(w http.ResponseWriter, r *http.Request, err error) {
 
 func MalformedIDResponse(w http.ResponseWriter, r *http.Request, t, id string) {
 	msg := fmt.Sprintf("invalid %s id param: %s", t, id)
-	ErrorResponse(w,r,http.StatusBadRequest, msg)
+	ErrorResponse(w, r, http.StatusBadRequest, msg)
 }
 
 // migrate all error messages here
